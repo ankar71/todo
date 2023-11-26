@@ -1,0 +1,111 @@
+{{define "main-page"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Todo</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.9"
+        integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX"
+        crossorigin="anonymous"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+</head>
+
+<body>
+    <div class="columns is-centered">
+        <div class="column is-half">
+            <div class="box">
+                <h1 class="title has-text-primary has-text-centered">todos</h1>
+                <div class="columns is is-mobile">
+                    <div class="column is-1">
+                        <div id="select-icon" hx-put="/tasks/status" hx-target="#tasks" hx-swap="outerHTMML">
+                            <iconify-icon class="{{if eq .AllDone false}}has-text-light{{end}} is-size-4"
+                                icon="mdi:chevron-down-circle-outline"></iconify-icon>
+                        </div>
+                    </div>
+                    <div class="column is-11">
+                        <div class="control">
+                            <form title="enter task" hx-post="/task"
+                                hx-on::after-request="this.elements[0].value=''" hx-target="#tasks" hx-swap="outerHTML">
+                                <input name="task" class="input is-fullwidth" type="text"
+                                    placeholder="What needs to be done?">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="block">
+                    {{template "task-list" .TaskList}}
+                </div>
+                <div class="block">
+                    <nav class="level">
+                        <div id="active-counter">
+                            <p class="level-left is-size-7">{{ .ItemsLeft }} items left</p>
+                        </div>
+                        <div class="class=level-item">
+                            <div class="field is-grouped buttons are-small">
+                                <button class="button is-outlined" hx-get="/show/all" hx-target="#tasks"
+                                    hx-swap="outerHTML">All</button>
+                                <button class="button is-outlined" hx-get="/show/active" hx-target="#tasks"
+                                    hx-swap="outerHTML">Active</button>
+                                <button class="button is-outlined" hx-get="/show/completed" hx-target="#tasks"
+                                    hx-swap="outerHTML">Completed</button>
+                            </div>
+                        </div>
+                        <button class="level-right button is-small is-danger is-inverted" hx-delete="/tasks/completed" hx-target="#tasks" hx-swap="outerHTML">Clear completed</button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+{{end}}
+
+{{define "task-list"}}
+<div id="tasks">
+    <ul>
+        {{ range . }}
+        <li>
+            <div class="columns is-mobile">
+                <div class="column is-1">
+                    <label class="checkbox">
+                        <form hx-put="/task/{{.Id}}/status" hx-trigger="change" hx-target="#tasks">
+                            <input title="check for completion" type="checkbox" name="checkbox-{{.Id}}" {{ if .IsDone
+                                }}checked{{ end }}>
+                        </form>
+                    </label>
+                </div>
+                <div class="column is-10">
+                    <span>{{ if .IsDone }} <s>{{ .Label }}</s> {{ else }} {{ .Label }} {{ end }}</span>
+                </div>
+                <div class="column is-1">
+                    <button class="delete" title="Delete button" hx-delete="/task/{{ .Id }}" hx-target="#tasks"
+                        hx-swap="outerHTML"></button>
+                </div>
+            </div>
+        </li>
+        {{ end }}
+    </ul>
+</div>
+{{end}}
+
+{{define "chevron"}}
+<div id="select-icon" hx-swap-oob="true" hx-put="/tasks/status" hx-target="#tasks" hx-swap="outerHTMML"><iconify-icon
+        class="{{if eq . false}}has-text-light{{end}} is-size-4" icon="mdi:chevron-down-circle-outline"></iconify-icon>
+</div>
+{{end}}
+
+{{define "active-count"}}
+<div id="active-counter" hx-swap-oob="true">
+    <p class="level-left is-size-7">{{ . }} items left</p>
+</div>
+{{end}}
+
+{{define "combo"}}
+{{template "chevron" .AllDone}}
+{{template "active-count" .ItemsLeft}}
+{{template "task-list" .TaskList}}
+{{end}}
